@@ -1,4 +1,5 @@
 #include <iostream>
+#include <vector>
 #include <netinet/in.h> // for internet domain addresses
 #include <unistd.h> // for close
 #include <sys/types.h>
@@ -10,10 +11,12 @@ int main(int argc, char *argv[])
 {
     if (argc != 2) {
         std::cerr << "Usage: ./server [port number]" << std::endl;
+        exit(0);
     }
 
     // get port number
     int port = std::atoi(argv[1]);
+    std::vector<int> clnt_fds;
     
     struct sockaddr_in server_addr;
     server_addr.sin_family = AF_INET; // ipv4
@@ -28,7 +31,6 @@ int main(int argc, char *argv[])
     }
 
     // bind local ip address
-    struct sockaddr addr;
     int bind_status = bind(server_fd, (struct sockaddr*)&server_addr, sizeof(server_addr));
     if (bind_status == -1)
     {
@@ -55,11 +57,40 @@ int main(int argc, char *argv[])
 
         // create new nonblocking socket file sescriptor
         int clnt_fd = accept4(server_fd, (struct sockaddr*)&server_addr, &clnt_addr_size, SOCK_NONBLOCK);
+        std::cout << "New client " << clnt_fd << "connected." << std::endl;
         if (clnt_fd < 0)
         {
             perror("Accept failed");
             return 1;
+        } else {
+            clnt_fds.push_back(clnt_fd);
+        }
+
+        // handle all the client connections
+        for (auto it = clnt_fds.begin(); it != clnt_fds.end();) 
+        {
+            char buffer[1024] = {0};
+            ssize_t bytes_received = recv(*it, buffer, sizeof(buffer), 0);
+            if (bytes_received > 0)
+            {
+                std::cout << "Received msg: " << buffer << std::endl;
+                // currently only send the message back to the client
+                send(*it, buffer, bytes_received, 0);
+                ++it;
+            } else if (bytes_received == 0)
+            {   
+                std::cout << "zero length msg or client disconnected" << std::endl;
+                close(*it);
+                it = clnt_fds.erase(it);
+            } else {
+                perror("recv failed");
+                close(*it);
+                it = clnt_fds.erase(it);
+            }
         }
     }
+
+    close(server_fd);
+    return 0;
 
 }
