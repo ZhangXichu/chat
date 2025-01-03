@@ -11,14 +11,14 @@ int main(int argc, char *argv[])
 {
     if (argc != 2) {
         std::cerr << "Usage: ./server [port number]" << std::endl;
-        exit(0);
+        return 1;
     }
 
     // get port number
     int port = std::atoi(argv[1]);
     std::vector<int> clnt_fds;
     
-    struct sockaddr_in server_addr;
+    struct sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET; // ipv4
     server_addr.sin_addr.s_addr = INADDR_ANY; // bind to any address
     server_addr.sin_port = htons(port);
