@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
+#include <unistd.h> // for close
 
 int main(int argc, char *argv[])
 {
@@ -45,10 +46,30 @@ int main(int argc, char *argv[])
     std::cout << "Connected to the server."  << std::endl;
 
     const char *message = "First message";
-    while (true)
-    {       
-
+    ssize_t bytes_sent = send(client_fd, message, std::strlen(message), 0);
+    if (bytes_sent == -1)
+    {
+        perror("Failed to send message to the server.");
+        close(client_fd);
+        return 1;
     }
+    std::cout << "Messenge sent: " << message << std::endl;
+
+    char buffer[1024] = {0};
+    ssize_t bytes_received = recv(client_fd, buffer, sizeof(buffer), 0);
+    if (bytes_received > 0)
+    {
+        std::cout << "Messenge received: " << message << std::endl;
+    } else {
+        perror("Recv failed");
+    }
+
+    close(client_fd);
+
+    // while (true)
+    // {       
+
+    // }
 
     return 0;
 }
