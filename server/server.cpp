@@ -82,7 +82,11 @@ int main(int argc, char *argv[])
                 std::cout << "zero length msg or client disconnected" << std::endl;
                 close(*it);
                 it = clnt_fds.erase(it);
-            } else {
+            } else if (errno == EAGAIN || errno == EWOULDBLOCK)
+            { // no connection available, continue with other clients
+                ++it; 
+            }
+            else {
                 perror("recv failed");
                 close(*it);
                 it = clnt_fds.erase(it);
