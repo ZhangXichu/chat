@@ -1,11 +1,37 @@
 #include <iostream>
 #include <vector>
+#include <thread>
 #include <netinet/in.h> // for internet domain addresses
 #include <unistd.h> // for close
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <constants.hpp>
 
-#define MAX_CLNT 10
+void handle_client(int clnt_fd)
+{
+    std::cout << "new thread" << std::endl;
+    while (true)
+    {
+        char buffer[MAX_MSG_LEN];
+        ssize_t bytes_received = recv(clnt_fd, buffer, sizeof(buffer), 0);
+        std::cout << "bytes_received: " << bytes_received << std::endl;
+        if (bytes_received <= 0)
+        {
+            break;
+        } else {
+            std::cout << "Received msg: " << buffer << std::endl;
+            // currently only send the message back to the client
+            ssize_t bytes_sent = send(clnt_fd, buffer, bytes_received, 0);
+            if (bytes_sent == -1) {
+                perror("Failed to send message to client");
+            } else {
+                std::cout << "Message sent to client: " << clnt_fd << std::endl;
+            }
+        }
+    }
+    close(clnt_fd);
+    std::cout << "Connection with client " << clnt_fd << " closed." << std::endl;
+}
 
 int main(int argc, char *argv[])
 {
@@ -52,46 +78,22 @@ int main(int argc, char *argv[])
     // accepting requests
     while (true)
     {
+        std::cout << "new iter" << std::endl;
         struct sockaddr_in client_addr;
         socklen_t clnt_addr_size = sizeof(client_addr);
 
-        // create new nonblocking socket file sescriptor
-        int clnt_fd = accept4(server_fd, (struct sockaddr*)&server_addr, &clnt_addr_size, SOCK_NONBLOCK);
-        std::cout << "New client " << clnt_fd << "connected." << std::endl;
+        // create new socket file sescriptor
+        int clnt_fd = accept(server_fd, (struct sockaddr*)&server_addr, &clnt_addr_size);
         if (clnt_fd < 0)
         {
             perror("Accept failed");
-            return 1;
+            continue;
         } else {
-            clnt_fds.push_back(clnt_fd);
+            std::cout << "New client " << clnt_fd << " connected." << std::endl;
+            // clnt_fds.push_back(clnt_fd);
         }
-
-        // handle all the client connections
-        for (auto it = clnt_fds.begin(); it != clnt_fds.end();) 
-        {
-            char buffer[1024] = {0};
-            ssize_t bytes_received = recv(*it, buffer, sizeof(buffer), 0);
-            if (bytes_received > 0)
-            {
-                std::cout << "Received msg: " << buffer << std::endl;
-                // currently only send the message back to the client
-                send(*it, buffer, bytes_received, 0);
-                ++it;
-            } else if (bytes_received == 0)
-            {   
-                std::cout << "zero length msg or client disconnected" << std::endl;
-                close(*it);
-                it = clnt_fds.erase(it);
-            } else if (errno == EAGAIN || errno == EWOULDBLOCK)
-            { // no connection available, continue with other clients
-                ++it; 
-            }
-            else {
-                perror("recv failed");
-                close(*it);
-                it = clnt_fds.erase(it);
-            }
-        }
+        std::thread client_thread(handle_client, clnt_fd);
+        client_thread.detach();
     }
 
     close(server_fd);
