@@ -16,5 +16,7 @@ add_executable(client client/client.cpp)
 
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_BINARY_DIR}")
 message(STATUS "CMAKE_SOURCE_DIR: ${CMAKE_SOURCE_DIR}")
+target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(server PRIVATE ${CMAKE_SOURCE_DIR}/server)
+target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR})
 target_include_directories(client PRIVATE ${CMAKE_SOURCE_DIR}/client)
