@@ -1,11 +1,15 @@
 #include <iostream>
 #include <vector>
 #include <thread>
+#include <mutex>
 #include <netinet/in.h> // for internet domain addresses
 #include <unistd.h> // for close
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <constants.hpp>
+
+std::mutex clnt_mtx;
+std::vector<int> clnt_fds;
 
 void handle_client(int clnt_fd)
 {
@@ -19,14 +23,7 @@ void handle_client(int clnt_fd)
         {
             break;
         } else {
-            std::cout << "Received msg: " << buffer << std::endl;
-            // currently only send the message back to the client
-            ssize_t bytes_sent = send(clnt_fd, buffer, bytes_received, 0);
-            if (bytes_sent == -1) {
-                perror("Failed to send message to client");
-            } else {
-                std::cout << "Message sent to client: " << clnt_fd << std::endl;
-            }
+            std::cout << "client" << clnt_fd << "says : " << buffer << std::endl;
         }
     }
     close(clnt_fd);
@@ -42,7 +39,6 @@ int main(int argc, char *argv[])
 
     // get port number
     int port = std::atoi(argv[1]);
-    std::vector<int> clnt_fds;
     
     struct sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET; // ipv4
@@ -90,7 +86,10 @@ int main(int argc, char *argv[])
             continue;
         } else {
             std::cout << "New client " << clnt_fd << " connected." << std::endl;
-            // clnt_fds.push_back(clnt_fd);
+            {
+                std::lock_guard<std::mutex> lock(clnt_mtx);
+                clnt_fds.push_back(clnt_fd);
+            }
         }
         std::thread client_thread(handle_client, clnt_fd);
         client_thread.detach();

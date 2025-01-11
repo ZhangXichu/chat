@@ -66,7 +66,7 @@ int main(int argc, char *argv[])
         ssize_t bytes_received = recv(client_fd, response_buffer, sizeof(buffer), 0);
         if (bytes_received > 0)
         {
-            std::cout << "Server response: " << response_buffer << std::endl;
+            std::cout << "From other clients: " << response_buffer << std::endl;
         } else {
             perror("Recv failed");
         }
