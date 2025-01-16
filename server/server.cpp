@@ -18,18 +18,30 @@ struct PerSocketData {};
 
 void handle_client(int clnt_fd)
 {
-    std::cout << "new thread" << std::endl;
+    char buffer[MAX_MSG_LEN + 1];
+    std::string message_buffer;
+
     while (true)
     {
-        char buffer[MAX_MSG_LEN];
         ssize_t bytes_received = recv(clnt_fd, buffer, sizeof(buffer), 0);
         std::cout << "bytes_received: " << bytes_received << std::endl;
         if (bytes_received <= 0)
         {
             break;
-        } else {
-            std::cout << "client" << clnt_fd << "says : " << buffer << std::endl;
+        } 
+        
+        buffer[bytes_received] = '\0';
+        message_buffer += buffer;
+        std::cout << "message buffer: " << message_buffer << std::endl;
+        size_t pos;
+        while ((pos = message_buffer.find('\n')) != std::string::npos)
+        {
+            // Extract message
+            std::string message = message_buffer.substr(0, pos); 
+            std::cout << "client" << clnt_fd << " says : " << message << std::endl;
+            message_buffer.erase(0, pos + 1);
         }
+
     }
     close(clnt_fd);
     std::cout << "Connection with client " << clnt_fd << " closed." << std::endl;

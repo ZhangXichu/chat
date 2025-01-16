@@ -52,6 +52,11 @@ int main(int argc, char *argv[])
         std::cout << ">";
         std::cin.getline(buffer, sizeof(buffer));
 
+        size_t len = std::strlen(buffer);
+        
+        buffer[len] = '\n';      
+        buffer[len + 1] = '\0'; 
+
         ssize_t bytes_sent = send(client_fd, buffer, std::strlen(buffer), 0);
         if (bytes_sent == -1)
         {
