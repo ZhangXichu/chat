@@ -49,9 +49,6 @@ int main()
         },
         .message = []([[maybe_unused]] auto *ws,  std::string_view message, [[maybe_unused]] uWS::OpCode opCode) 
         {
-            std::cout << "WebSocket client says: " << message << std::endl;
-
-            // ws->send(message, opCode);
             global_app->publish("broadcast", message, opCode, false);
         },
         .close = [](auto *ws, [[maybe_unused]] int code, [[maybe_unused]] std::string_view message) 
@@ -62,7 +59,7 @@ int main()
         }
     }).listen("0.0.0.0", ws_port, [ws_port](auto *listenSocket) {
         if (listenSocket) {
-            std::cout << "WebSocket/HTTP server listening on http://localhost:" << ws_port << std::endl;
+            std::cout << "WebSocket/HTTP server listening on port 8080:" << ws_port << std::endl;
         }
     });
 
