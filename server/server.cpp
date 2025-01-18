@@ -32,7 +32,7 @@ void handle_client(int clnt_fd)
         
         buffer[bytes_received] = '\0';
         message_buffer += buffer;
-        std::cout << "message buffer: " << message_buffer << std::endl;
+
         size_t pos;
         while ((pos = message_buffer.find('\n')) != std::string::npos)
         {
