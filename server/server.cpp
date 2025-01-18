@@ -1,20 +1,21 @@
+/**
+ * @brief for legacy client
+ */
 #include <iostream>
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <fstream>
+#include <sstream>
 #include <netinet/in.h> // for internet domain addresses
 #include <unistd.h> // for close
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <constants.hpp>
-#include <uWebSockets/App.h>
 
 std::mutex clnt_mtx;
-std::mutex ws_mtx;
-std::vector<uWS::WebSocket<false, true, struct PerSocketData>*> ws_clients;
+
 std::vector<int> clnt_fds;
-// empty custom user data for each WebSocket connection
-struct PerSocketData {};
 
 void handle_client(int clnt_fd)
 {
@@ -88,28 +89,6 @@ int main(int argc, char *argv[])
     }
     std::cout << "Server is listening on port " << port << std::endl;
 
-    std::thread ws_thread([]()
-    {
-        uWS::App().ws<struct PerSocketData>("/",{
-            .compression = uWS::SHARED_COMPRESSOR,
-            .maxPayloadLength = 16 * 1024,
-            .idleTimeout = 10,
-            .open = [](auto *ws) {
-                std::cout << "WebSocket client connected" << std::endl;
-                std::lock_guard<std::mutex> lock(ws_mtx);
-                ws_clients.push_back(ws);
-            },
-            .message = []([[maybe_unused]] auto *ws,  std::string_view message, [[maybe_unused]] uWS::OpCode opCode) {
-                std::cout << "WebSocket client says: " << message << std::endl;
-            },
-            .close = [](auto *ws, [[maybe_unused]] int code, [[maybe_unused]] std::string_view message) {
-                std::cout << "WebSocket client disconnected" << std::endl;
-                std::lock_guard<std::mutex> lock(ws_mtx);
-                ws_clients.erase(std::remove(ws_clients.begin(), ws_clients.end(), ws), ws_clients.end());
-            }
-        });
-    });
-
     // accepting requests
     while (true)
     {
@@ -135,6 +114,7 @@ int main(int argc, char *argv[])
     }
 
     close(server_fd);
+
     return 0;
 
 }

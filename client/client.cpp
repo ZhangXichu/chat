@@ -1,3 +1,7 @@
+/**
+ * @brief legacy client
+ */
+
 #include <iostream>
 #include <cstring> 
 #include <cstdlib>
